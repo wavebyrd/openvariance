@@ -18,3 +18,13 @@ First release.
 - Self-contained HTML dashboard
 - CLI with `--json` output, and a local MCP server for AI agents
 - Demo Co. sample dataset and messy example exports
+
+Fixes found in end-to-end testing before release:
+
+- CI created no virtual environment before installing, so every job failed
+- "Office Supplies & Misc" mapped to rent and facilities; explicit supplies, postage and misc
+  accounts now map to other operating expenses
+- MCP tool errors now reach the agent as plain-English messages instead of a generic failure
+- Forecasts refuse data without a balance sheet instead of assuming zero balances
+- Excel: KPI tiles no longer show `####`, the waterfall chart plots its hidden helper columns,
+  check cells read 0.00, and the scenario selector rejects names that aren't scenarios

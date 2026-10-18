@@ -11,6 +11,8 @@ questions about them.
 
 from __future__ import annotations
 
+import functools
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from decimal import Decimal
 from pathlib import Path
@@ -78,10 +80,29 @@ def build_server() -> Any:
     except ImportError:  # pragma: no cover - mcp 1.x
         from mcp.server.fastmcp import FastMCP as Server  # type: ignore[no-redef,attr-defined]
 
+    try:
+        from mcp.server.mcpserver.exceptions import ToolError
+    except ImportError:  # pragma: no cover - mcp 1.x
+        from mcp.server.fastmcp.exceptions import ToolError  # type: ignore[no-redef]
+
     server = Server("openvariance", instructions=INSTRUCTIONS)
     ws = Workspace()
 
-    @server.tool()
+    def tool(fn: Callable[..., Any]) -> Callable[..., Any]:
+        """Register a tool whose expected errors reach the agent as plain-English messages."""
+
+        @functools.wraps(fn)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            try:
+                return fn(*args, **kwargs)
+            except (ValueError, KeyError, OSError, RuntimeError) as exc:
+                message = exc.args[0] if exc.args and isinstance(exc.args[0], str) else str(exc)
+                raise ToolError(message) from exc
+
+        server.tool()(wrapper)
+        return wrapper
+
+    @tool
     def load_demo() -> dict[str, Any]:
         """Load Demo Co., a fictional software company, as datasets 'actual', 'budget' and
         'history' (actual P&L plus balance sheet). Driver data is attached, so variance
@@ -96,7 +117,7 @@ def build_server() -> Any:
             "suggested_next": "run_variance(actual='actual', baseline='budget', period='2026-09')",
         }
 
-    @server.tool()
+    @tool
     def inspect_file(
         path: str,
         sheet: str | None = None,
@@ -114,7 +135,7 @@ def build_server() -> Any:
             "suggestions": [s.to_dict() for s in suggest_mapping(insp, existing)],
         }
 
-    @server.tool()
+    @tool
     def import_file(
         path: str,
         name: str,
@@ -165,7 +186,7 @@ def build_server() -> Any:
             )
         return out
 
-    @server.tool()
+    @tool
     def load_sec_company(
         ticker: str, name: str | None = None, quarters: int = 12, user_agent: str | None = None
     ) -> dict[str, Any]:
@@ -179,12 +200,12 @@ def build_server() -> Any:
         ws.data[key] = company.data
         return {**ws.describe(key), "notes": company.notes}
 
-    @server.tool()
+    @tool
     def list_datasets() -> list[dict[str, Any]]:
         """Datasets loaded in this session."""
         return [ws.describe(n) for n in ws.data]
 
-    @server.tool()
+    @tool
     def run_variance(
         actual: str,
         baseline: str,
@@ -215,7 +236,7 @@ def build_server() -> Any:
         ws.last_variance = run
         return run.to_dict()
 
-    @server.tool()
+    @tool
     def run_forecast(
         dataset: str, periods: int | None = None, assumptions: dict[str, float] | None = None
     ) -> dict[str, Any]:
@@ -229,7 +250,7 @@ def build_server() -> Any:
         ws.last_forecast = run
         return run.to_dict()
 
-    @server.tool()
+    @tool
     def check_balance_sheet(dataset: str) -> list[dict[str, Any]]:
         """Check that assets equal liabilities plus equity in every period that has a
         balance sheet. Use it on imported history before forecasting."""
@@ -253,7 +274,7 @@ def build_server() -> Any:
             )
         return [c.to_dict() for c in checks]
 
-    @server.tool()
+    @tool
     def export_excel(path: str, kind: str = "variance") -> dict[str, str]:
         """Save the last variance ('variance') or forecast ('forecast') as an Excel workbook with
         live formulas. Returns the absolute path."""
@@ -274,7 +295,7 @@ def build_server() -> Any:
             )
         return {"file": str(target)}
 
-    @server.tool()
+    @tool
     def export_dashboard(path: str) -> dict[str, str]:
         """Save the last variance as a self-contained HTML dashboard (opens offline in any
         browser). Returns the absolute path."""
@@ -284,7 +305,7 @@ def build_server() -> Any:
         workflows.export_variance_outputs(ws.last_variance, None, target)
         return {"file": str(target)}
 
-    @server.tool()
+    @tool
     def describe_lines() -> dict[str, Any]:
         """The standard chart of accounts: every line key, label, statement and whether
         higher is favorable. Use these keys in mappings."""

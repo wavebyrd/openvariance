@@ -121,3 +121,14 @@ def test_mcp_tools_end_to_end(tmp_path: Path) -> None:
         accept="high",
     )
     assert imported["stored_as"] is None and "Other G&A" in imported["unmapped"]
+
+
+def test_mcp_errors_reach_the_agent_in_plain_english() -> None:
+    from openvariance.mcp_server import build_server
+
+    server = build_server()
+    call(server, "load_demo")
+    with pytest.raises(Exception, match="Loaded datasets: actual, budget, history"):
+        asyncio.run(server.call_tool("run_variance", {"actual": "nope", "baseline": "budget"}))
+    with pytest.raises(Exception, match="needs a balance sheet"):
+        asyncio.run(server.call_tool("run_forecast", {"dataset": "actual"}))

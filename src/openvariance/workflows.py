@@ -174,6 +174,14 @@ def run_forecast(
     overrides: dict[str, Any] | None = None,
     company: str | None = None,
 ) -> ForecastRun:
+    last = history.periods[-1] if history.periods else None
+    if last is None or history.value("total_assets", last) is None:
+        raise ValueError(
+            "A forecast needs a balance sheet for the latest period (cash, receivables, "
+            "PP&E, debt, equity and so on), and this data only has "
+            f"{', '.join(history.lines[:6]) or 'no lines'}. Import a balance sheet for "
+            f"{last or 'the latest period'} as well, or use a public company's SEC data."
+        )
     inferred = infer_assumptions(history)
     base = inferred.assumptions
     if overrides:

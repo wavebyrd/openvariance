@@ -46,7 +46,7 @@ from .forecast import (
 from .variance import VarianceReport
 
 NUM = '#,##0;(#,##0);"–"'
-NUM2 = '#,##0.00;(#,##0.00);"–"'
+NUM2 = "#,##0.00;(#,##0.00);0.00"  # check cells show 0.00, never a dash
 PCT = '0.0%;(0.0%);"–"'
 PCT2 = "0.00%"
 DAYS = "0.0"
@@ -87,13 +87,17 @@ def _title(ws: Worksheet, title: str, subtitle: str, width: int) -> None:
     ws["A2"].alignment = Alignment(indent=1)
 
 
+TEXT_HEADERS = {"Detail", "Source", "Driver", "Step", "Line"}
+
+
 def _header(ws: Worksheet, row: int, labels: Sequence[str], start_col: int = 1) -> None:
     for i, label in enumerate(labels):
         c = ws.cell(row, start_col + i, label)
         c.font = WHITE_BOLD
         c.fill = HEADER_FILL
+        left = i == 0 or label in TEXT_HEADERS
         c.alignment = Alignment(
-            horizontal="left" if i == 0 else "right", vertical="center", indent=1 if i == 0 else 0
+            horizontal="left" if left else "right", vertical="center", indent=1 if left else 0
         )
     ws.row_dimensions[row].height = 20
 
@@ -380,7 +384,26 @@ def _bridge_sheet(ws: Worksheet, bridge: Bridge, report: VarianceReport) -> dict
         "last": last_helper,
         "col": hc,
         "check": f"Bridge!B{check_row}",
+        "axis_min": _axis_min(bridge),
     }
+
+
+def _axis_min(bridge: Bridge) -> float | None:
+    """Start the value axis above zero when the drivers are small next to the totals.
+
+    Same rule as the HTML dashboard: only when every level is positive, and the chart
+    title says where the axis starts so the truncation is never hidden.
+    """
+    levels = [bridge.start]
+    for step in bridge.steps:
+        levels.append(levels[-1] + step.amount)
+    low, high = min(levels), max(levels)
+    if low <= 0 or low <= (high - low) * 2:
+        return None
+    span = high - low
+    raw = max(low - span * Decimal("1.2"), Decimal(0))
+    magnitude = Decimal(10) ** (len(str(int(span))) - 1)
+    return float((raw / magnitude).to_integral_value(rounding="ROUND_FLOOR") * magnitude)
 
 
 def _waterfall_chart(bridge_rows: dict[str, Any], title: str) -> BarChart:
@@ -397,6 +420,10 @@ def _waterfall_chart(bridge_rows: dict[str, Any], title: str) -> BarChart:
     chart.gapWidth = 60
     chart.title = title
     chart.legend = None
+    chart.visible_cells_only = False  # the helper columns are hidden; plot them anyway
+    if bridge_rows.get("axis_min") is not None:
+        chart.y_axis.scaling.min = bridge_rows["axis_min"]
+        chart.title = f"{title} (axis starts at {bridge_rows['axis_min']:,.0f})"
     chart.height = 8
     chart.width = 22
     chart.y_axis.numFmt = "#,##0"
@@ -458,11 +485,14 @@ def _dashboard_sheet(
     for i, key in enumerate(tiles):
         c0 = 1 + i * 3
         r = rows[key]
+        for rr in (4, 5, 6):
+            ws.merge_cells(start_row=rr, start_column=c0, end_row=rr, end_column=c0 + 2)
         label = ws.cell(4, c0, LINES[key].label)
         label.font = MUTED
         value = ws.cell(5, c0, f"=Variance!B{r}")
         value.font = _font(bold=True, size=18, color=theme.xl(theme.INK))
         value.number_format = NUM
+        value.alignment = Alignment(horizontal="left", indent=1)
         delta = ws.cell(
             6,
             c0,
@@ -684,7 +714,14 @@ def _assumptions_sheet(
     ws["C4"] = names[0]
     ws["C4"].font = _font(bold=True, color=theme.xl(theme.INPUT_BLUE))
     ws["C4"].fill = TINT_FILL
-    dv = DataValidation(type="list", formula1='"' + ",".join(names) + '"', allow_blank=False)
+    dv = DataValidation(
+        type="list",
+        formula1='"' + ",".join(names) + '"',
+        allow_blank=False,
+        showErrorMessage=True,
+        errorTitle="Unknown scenario",
+        error="Pick one of: " + ", ".join(names),
+    )
     ws.add_data_validation(dv)
     dv.add("C4")
     ppy = periods_per_year(results[0].periods[0])

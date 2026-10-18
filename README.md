@@ -169,6 +169,16 @@ src/openvariance/
   cli.py           the openvariance command
 ```
 
+## Known limits
+
+- **No seasonality yet.** Forecasts grow smoothly from the latest period, so a company with a big
+  holiday quarter (Apple, retailers) gets a reasonable annual total but not the quarter-by-quarter
+  shape.
+- **The importer has been tested on the formats in `examples/` and the tests.** Unusual exports
+  (multi-row headers, merged department columns) may need converting to the standard format.
+- **SEC tag coverage is broad but not universal.** Banks and insurers report differently and
+  aren't a good fit yet.
+
 ## Roadmap
 
 - Rolling forecasts with saved versions, and forecast accuracy tracking over time

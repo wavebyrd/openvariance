@@ -106,7 +106,7 @@ _KEYWORDS: tuple[tuple[str, str, str], ...] = (
         "high",
     ),
     (
-        r"\brent\b|lease|utilit|office|facilit|janitor|cleaning|electric|water|gas\b",
+        r"\brent\b|lease|utilit|office (rent|space)|facilit|janitor|cleaning|electric|water\b|\bgas\b",
         "rent_facilities",
         "high",
     ),
@@ -114,8 +114,13 @@ _KEYWORDS: tuple[tuple[str, str, str], ...] = (
     (r"travel|meal|lodging|airfare|hotel|mileage|entertainment|uber|lyft", "travel", "high"),
     (r"research|development|r&d|engineering", "research_development", "low"),
     (
-        r"insurance|bank (fee|charge)|dues|telephone|internet|phone|postage|shipping|supplies|"
-        r"repair|maintenance|misc|general|other|fees|charitable|license|permit",
+        r"office supplies|supplies|postage|bank (fee|charge)|dues|telephone|internet|misc",
+        "other_opex",
+        "high",
+    ),
+    (
+        r"insurance|phone|shipping|repair|maintenance|general|other|fees|charitable|license|"
+        r"permit",
         "other_opex",
         "medium",
     ),

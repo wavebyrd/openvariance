@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from openpyxl import Workbook
 
+from openvariance import demo
 from openvariance.importers import (
     AccountMapping,
     import_file,
@@ -73,18 +74,14 @@ def test_quickbooks_export_imports_and_ties(demo_data) -> None:  # type: ignore[
         "Ties to source: Total Income",
         "Ties to source: Net Income",
     }
-    for key in (
-        "revenue",
-        "payroll",
-        "software",
-        "operating_income",
-        "interest_expense",
-        "income_tax",
-        "net_income",
-    ):
-        ours, expected = result.data.value(key, "2026-09"), demo_data.actual.value(key, "2026-09")
-        assert ours is not None and expected is not None
-        assert abs(ours - expected) <= Decimal("0.02"), key
+    # Every line and every month must match the data the export was generated from.
+    assert result.data.lines == demo_data.actual.lines
+    for key in [*demo_data.actual.lines, "operating_income", "net_income"]:
+        for period in demo_data.actual.periods:
+            ours = result.data.value(key, period)
+            expected = demo_data.actual.value(key, period)
+            assert ours is not None and expected is not None
+            assert abs(ours - expected) <= Decimal("0.02"), (key, period)
 
 
 def test_budget_workbook_needs_confirmation_then_saves(tmp_path: Path) -> None:
@@ -99,7 +96,13 @@ def test_budget_workbook_needs_confirmation_then_saves(tmp_path: Path) -> None:
     mapping.save(tmp_path / "map.json")
     result = import_file(path, mapping=tmp_path / "map.json")
     assert result.ok
-    assert result.data.value("revenue", "2026-12") is not None
+    budget = demo.load().budget
+    assert result.data.lines == budget.lines
+    for key in budget.lines:
+        for period in budget.periods:
+            ours, expected = result.data.value(key, period), budget.value(key, period)
+            assert ours is not None and expected is not None
+            assert abs(ours - expected) <= Decimal("0.5"), (key, period)
 
 
 def test_units_and_credit_negative_long_format(tmp_path: Path) -> None:
