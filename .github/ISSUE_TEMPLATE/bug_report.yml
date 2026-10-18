@@ -1,0 +1,21 @@
+name: Bug report
+description: Something calculated wrong, didn't tie, or crashed
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The command or tool call, what you expected, and what you got.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: A small file with made-up numbers is ideal. Please don't attach real company financials.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: openvariance --version

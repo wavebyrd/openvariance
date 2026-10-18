@@ -1,0 +1,253 @@
+period,driver,key,value
+2026-01,units,Enterprise,468
+2026-01,units,Pro,3820
+2026-01,units,Starter,5416
+2026-01,price,Enterprise,4150
+2026-01,price,Pro,499
+2026-01,price,Starter,99
+2026-01,unit_cost,Enterprise,810.9
+2026-01,unit_cost,Pro,93.49
+2026-01,unit_cost,Starter,22.32
+2026-01,headcount,Customer Success,17
+2026-01,headcount,Engineering,42
+2026-01,headcount,General and Administrative,13
+2026-01,headcount,Marketing,9
+2026-01,headcount,Sales,26
+2026-01,cost_per_head,Customer Success,9510
+2026-01,cost_per_head,Engineering,16533
+2026-01,cost_per_head,General and Administrative,12558
+2026-01,cost_per_head,Marketing,13074
+2026-01,cost_per_head,Sales,14015
+2026-01,depreciation_amortization,,87695
+2026-01,income_tax,,257408
+2026-01,interest_expense,,14527
+2026-01,marketing,,317781
+2026-01,other_opex,,65355
+2026-01,professional_fees,,58440
+2026-01,rent_facilities,,146262
+2026-01,software,,210494
+2026-01,travel,,52593
+2026-02,units,Enterprise,477
+2026-02,units,Pro,3887
+2026-02,units,Starter,5620
+2026-02,price,Enterprise,4150
+2026-02,price,Pro,499
+2026-02,price,Starter,99
+2026-02,unit_cost,Enterprise,835.74
+2026-02,unit_cost,Pro,94.06
+2026-02,unit_cost,Starter,21.74
+2026-02,headcount,Customer Success,17
+2026-02,headcount,Engineering,42
+2026-02,headcount,General and Administrative,13
+2026-02,headcount,Marketing,9
+2026-02,headcount,Sales,26
+2026-02,cost_per_head,Customer Success,9503
+2026-02,cost_per_head,Engineering,16642
+2026-02,cost_per_head,General and Administrative,12394
+2026-02,cost_per_head,Marketing,13130
+2026-02,cost_per_head,Sales,14085
+2026-02,depreciation_amortization,,85655
+2026-02,income_tax,,274177
+2026-02,interest_expense,,13907
+2026-02,marketing,,313326
+2026-02,other_opex,,69387
+2026-02,professional_fees,,59742
+2026-02,rent_facilities,,141984
+2026-02,software,,202729
+2026-02,travel,,53955
+2026-03,units,Enterprise,478
+2026-03,units,Pro,3876
+2026-03,units,Starter,5646
+2026-03,price,Enterprise,4150
+2026-03,price,Pro,499
+2026-03,price,Starter,99
+2026-03,unit_cost,Enterprise,819.92
+2026-03,unit_cost,Pro,95.32
+2026-03,unit_cost,Starter,21.91
+2026-03,headcount,Customer Success,17
+2026-03,headcount,Engineering,44
+2026-03,headcount,General and Administrative,13
+2026-03,headcount,Marketing,9
+2026-03,headcount,Sales,26
+2026-03,cost_per_head,Customer Success,9519
+2026-03,cost_per_head,Engineering,16373
+2026-03,cost_per_head,General and Administrative,12498
+2026-03,cost_per_head,Marketing,13065
+2026-03,cost_per_head,Sales,14001
+2026-03,depreciation_amortization,,80963
+2026-03,income_tax,,269415
+2026-03,interest_expense,,14199
+2026-03,marketing,,305554
+2026-03,other_opex,,68122
+2026-03,professional_fees,,62556
+2026-03,rent_facilities,,143840
+2026-03,software,,215684
+2026-03,travel,,51891
+2026-04,units,Enterprise,489
+2026-04,units,Pro,3865
+2026-04,units,Starter,5566
+2026-04,price,Enterprise,4150
+2026-04,price,Pro,499
+2026-04,price,Starter,99
+2026-04,unit_cost,Enterprise,824.02
+2026-04,unit_cost,Pro,93.49
+2026-04,unit_cost,Starter,22.34
+2026-04,headcount,Customer Success,18
+2026-04,headcount,Engineering,44
+2026-04,headcount,General and Administrative,13
+2026-04,headcount,Marketing,9
+2026-04,headcount,Sales,27
+2026-04,cost_per_head,Customer Success,9573
+2026-04,cost_per_head,Engineering,16490
+2026-04,cost_per_head,General and Administrative,12531
+2026-04,cost_per_head,Marketing,12930
+2026-04,cost_per_head,Sales,13994
+2026-04,depreciation_amortization,,86445
+2026-04,income_tax,,266159
+2026-04,interest_expense,,14320
+2026-04,marketing,,313675
+2026-04,other_opex,,68408
+2026-04,professional_fees,,62922
+2026-04,rent_facilities,,151221
+2026-04,software,,207180
+2026-04,travel,,52239
+2026-05,units,Enterprise,491
+2026-05,units,Pro,3975
+2026-05,units,Starter,5769
+2026-05,price,Enterprise,4150
+2026-05,price,Pro,499
+2026-05,price,Starter,99
+2026-05,unit_cost,Enterprise,813.28
+2026-05,unit_cost,Pro,94.74
+2026-05,unit_cost,Starter,22.34
+2026-05,headcount,Customer Success,18
+2026-05,headcount,Engineering,45
+2026-05,headcount,General and Administrative,13
+2026-05,headcount,Marketing,9
+2026-05,headcount,Sales,27
+2026-05,cost_per_head,Customer Success,9518
+2026-05,cost_per_head,Engineering,16424
+2026-05,cost_per_head,General and Administrative,12490
+2026-05,cost_per_head,Marketing,13040
+2026-05,cost_per_head,Sales,13870
+2026-05,depreciation_amortization,,87771
+2026-05,income_tax,,279582
+2026-05,interest_expense,,15050
+2026-05,marketing,,315884
+2026-05,other_opex,,68075
+2026-05,professional_fees,,58560
+2026-05,rent_facilities,,151119
+2026-05,software,,209581
+2026-05,travel,,51927
+2026-06,units,Enterprise,504
+2026-06,units,Pro,4080
+2026-06,units,Starter,5765
+2026-06,price,Enterprise,4150
+2026-06,price,Pro,499
+2026-06,price,Starter,99
+2026-06,unit_cost,Enterprise,806.8
+2026-06,unit_cost,Pro,96.59
+2026-06,unit_cost,Starter,21.84
+2026-06,headcount,Customer Success,19
+2026-06,headcount,Engineering,45
+2026-06,headcount,General and Administrative,13
+2026-06,headcount,Marketing,9
+2026-06,headcount,Sales,28
+2026-06,cost_per_head,Customer Success,9491
+2026-06,cost_per_head,Engineering,16563
+2026-06,cost_per_head,General and Administrative,12616
+2026-06,cost_per_head,Marketing,13004
+2026-06,cost_per_head,Sales,14080
+2026-06,depreciation_amortization,,81575
+2026-06,income_tax,,289139
+2026-06,interest_expense,,14962
+2026-06,marketing,,328617
+2026-06,other_opex,,67986
+2026-06,professional_fees,,57384
+2026-06,rent_facilities,,144696
+2026-06,software,,219938
+2026-06,travel,,50783
+2026-07,units,Enterprise,493
+2026-07,units,Pro,4047
+2026-07,units,Starter,5784
+2026-07,price,Enterprise,4150
+2026-07,price,Pro,499
+2026-07,price,Starter,99
+2026-07,unit_cost,Enterprise,834.19
+2026-07,unit_cost,Pro,95.3
+2026-07,unit_cost,Starter,21.56
+2026-07,headcount,Customer Success,19
+2026-07,headcount,Engineering,46
+2026-07,headcount,General and Administrative,13
+2026-07,headcount,Marketing,10
+2026-07,headcount,Sales,28
+2026-07,cost_per_head,Customer Success,9523
+2026-07,cost_per_head,Engineering,16363
+2026-07,cost_per_head,General and Administrative,12563
+2026-07,cost_per_head,Marketing,12935
+2026-07,cost_per_head,Sales,14083
+2026-07,depreciation_amortization,,87295
+2026-07,income_tax,,269587
+2026-07,interest_expense,,15257
+2026-07,marketing,,324664
+2026-07,other_opex,,68564
+2026-07,professional_fees,,57930
+2026-07,rent_facilities,,146958
+2026-07,software,,220778
+2026-07,travel,,51028
+2026-08,units,Enterprise,502
+2026-08,units,Pro,4132
+2026-08,units,Starter,5854
+2026-08,price,Enterprise,4150
+2026-08,price,Pro,499
+2026-08,price,Starter,99
+2026-08,unit_cost,Enterprise,835.01
+2026-08,unit_cost,Pro,95.33
+2026-08,unit_cost,Starter,21.76
+2026-08,headcount,Customer Success,19
+2026-08,headcount,Engineering,46
+2026-08,headcount,General and Administrative,14
+2026-08,headcount,Marketing,10
+2026-08,headcount,Sales,30
+2026-08,cost_per_head,Customer Success,9532
+2026-08,cost_per_head,Engineering,16624
+2026-08,cost_per_head,General and Administrative,12609
+2026-08,cost_per_head,Marketing,12892
+2026-08,cost_per_head,Sales,14001
+2026-08,depreciation_amortization,,82425
+2026-08,income_tax,,273818
+2026-08,interest_expense,,13890
+2026-08,marketing,,334165
+2026-08,other_opex,,68136
+2026-08,professional_fees,,59472
+2026-08,rent_facilities,,142187
+2026-08,software,,218180
+2026-08,travel,,53602
+2026-09,units,Enterprise,509
+2026-09,units,Pro,4297
+2026-09,units,Starter,5816
+2026-09,price,Enterprise,3995
+2026-09,price,Pro,499
+2026-09,price,Starter,99
+2026-09,unit_cost,Enterprise,828.86
+2026-09,unit_cost,Pro,94.44
+2026-09,unit_cost,Starter,21.87
+2026-09,headcount,Customer Success,20
+2026-09,headcount,Engineering,50
+2026-09,headcount,General and Administrative,14
+2026-09,headcount,Marketing,10
+2026-09,headcount,Sales,30
+2026-09,cost_per_head,Customer Success,9500
+2026-09,cost_per_head,Engineering,16650
+2026-09,cost_per_head,General and Administrative,12500
+2026-09,cost_per_head,Marketing,13000
+2026-09,cost_per_head,Sales,14000
+2026-09,depreciation_amortization,,84439
+2026-09,income_tax,,236631
+2026-09,interest_expense,,14361
+2026-09,marketing,,336876
+2026-09,other_opex,,68136
+2026-09,professional_fees,,61830
+2026-09,rent_facilities,,146044
+2026-09,software,,303200
+2026-09,travel,,50201

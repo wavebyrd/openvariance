@@ -1,0 +1,33 @@
+# OpenVariance
+
+> Open source FP&A variance analysis. Compares actuals with a budget, forecast or prior period,
+> explains why the numbers moved with a reconciling driver bridge, builds linked three-statement
+> forecasts, reads messy accounting exports and SEC filings, and writes formula-driven Excel and
+> HTML dashboards. Runs locally as a CLI and an MCP server. No API keys.
+
+## Set up
+
+- MCP (Claude Code): `claude mcp add openvariance -- uvx --from git+https://github.com/wavebyrd/openvariance openvariance mcp`
+- MCP (other clients): command `uvx`, args `["--from", "git+https://github.com/wavebyrd/openvariance", "openvariance", "mcp"]`
+- CLI: `uvx --from git+https://github.com/wavebyrd/openvariance openvariance demo`. Every command accepts `--json`.
+- SEC data: set `OPENVARIANCE_SEC_USER_AGENT="Name email@example.com"`, using the user's own details.
+
+## First steps
+
+1. Call `load_demo`, then `run_variance(actual="actual", baseline="budget", period="2026-09")`.
+2. For a user's files: `inspect_file` → confirm non-high-confidence mappings with the user → `import_file` → `run_variance`.
+3. For a public company: `load_sec_company("TICKER")` → `run_forecast`.
+
+## Rules
+
+- Report only numbers returned by tools. Never calculate them yourself.
+- Positive variance = favorable. Percent variance = variance / |baseline|. "n/m" = zero baseline.
+- Stop on unmapped accounts or failed checks, and resolve them with the user.
+
+## Docs
+
+- [README](README.md): overview and quick start
+- [AGENTS.md](AGENTS.md): full agent instructions
+- [docs/agents.md](docs/agents.md): MCP tools
+- [docs/importing.md](docs/importing.md): file formats, mapping, tie-outs
+- [docs/methodology.md](docs/methodology.md): every formula, with worked examples

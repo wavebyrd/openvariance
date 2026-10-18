@@ -1,0 +1,16 @@
+name: Feature request
+description: A workflow, file format, or analysis you'd like supported
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: Describe the FP&A task, not just the feature.
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example
+      description: A sample file layout or the output you'd expect.
