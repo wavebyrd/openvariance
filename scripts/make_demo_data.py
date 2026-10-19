@@ -23,6 +23,7 @@ from __future__ import annotations
 import csv
 import random
 import sys
+from collections.abc import Callable
 from decimal import ROUND_HALF_UP, Decimal
 from fractions import Fraction
 from pathlib import Path
@@ -30,7 +31,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from openvariance.drivers import DriverModel, DriverSet, save_drivers  # noqa: E402
+from openvariance.drivers import DriverSet, pnl, save_drivers, to_inputs  # noqa: E402
 
 DEMO = ROOT / "src" / "openvariance" / "data" / "demo"
 EXAMPLES = ROOT / "examples"
@@ -93,11 +94,11 @@ def budget() -> dict[str, DriverSet]:
 
 
 def with_tax(s: DriverSet) -> DriverSet:
-    pnl = DriverModel.pnl(DriverModel.inputs(s))
+    lines = pnl(to_inputs(s))
     pretax = (
-        pnl["revenue"]
-        - pnl["cogs"]
-        - pnl["payroll"]
+        lines["revenue"]
+        - lines["cogs"]
+        - lines["payroll"]
         - sum(v for k, v in s.fixed.items() if k != "income_tax")
     )
     fixed = dict(s.fixed)
@@ -172,12 +173,12 @@ def balance_sheet(act: dict[str, DriverSet]) -> list[tuple[str, str, Fraction]]:
     rows = [("2025-12", k, v) for k, v in bal.items()]
     days = F(365, 12)
     for period, s in act.items():
-        pnl = DriverModel.pnl(DriverModel.inputs(s))
-        expenses = pnl["cogs"] + pnl["payroll"] + sum(s.fixed.values())
-        net_income = pnl["revenue"] - expenses
+        lines = pnl(to_inputs(s))
+        expenses = lines["cogs"] + lines["payroll"] + sum(s.fixed.values())
+        net_income = lines["revenue"] - expenses
         da = s.fixed["depreciation_amortization"]
-        ar = money(pnl["revenue"] * 36 / days)
-        ap = money(pnl["cogs"] * 21 / days)
+        ar = money(lines["revenue"] * 36 / days)
+        ap = money(lines["cogs"] * 21 / days)
         capex = F(120_000)
         repay = F(20_000)
         cfo = net_income + da - (ar - bal["accounts_receivable"]) + (ap - bal["accounts_payable"])
@@ -214,21 +215,21 @@ def quickbooks_export(act: dict[str, DriverSet]) -> None:
     }
     lines: list[tuple[str, dict[str, Fraction] | None]] = []
 
-    def row(label: str, f) -> None:  # type: ignore[no-untyped-def]
+    def row(label: str, f: Callable[[DriverSet], Fraction]) -> None:
         lines.append((label, {m: f(act[m]) for m in months}))
 
-    def pnl(m: DriverSet) -> dict[str, Fraction]:
-        return DriverModel.pnl(DriverModel.inputs(m))
+    def lines_of(m: DriverSet) -> dict[str, Fraction]:
+        return pnl(to_inputs(m))
 
     lines.append(("Income", None))
     for plan, number in (("Starter", 4010), ("Pro", 4020), ("Enterprise", 4030)):
         row(f"   {number} Subscription Revenue - {plan}", lambda s, p=plan: s.units[p] * s.price[p])
-    row("Total Income", lambda s: pnl(s)["revenue"])
+    row("Total Income", lambda s: lines_of(s)["revenue"])
     lines.append(("Cost of Goods Sold", None))
-    row("   5010 Hosting and Infrastructure", lambda s: pnl(s)["cogs"] * F(7, 10))
-    row("   5020 Customer Support Tools", lambda s: pnl(s)["cogs"] * F(3, 10))
-    row("Total Cost of Goods Sold", lambda s: pnl(s)["cogs"])
-    row("Gross Profit", lambda s: pnl(s)["revenue"] - pnl(s)["cogs"])
+    row("   5010 Hosting and Infrastructure", lambda s: lines_of(s)["cogs"] * F(7, 10))
+    row("   5020 Customer Support Tools", lambda s: lines_of(s)["cogs"] * F(3, 10))
+    row("Total Cost of Goods Sold", lambda s: lines_of(s)["cogs"])
+    row("Gross Profit", lambda s: lines_of(s)["revenue"] - lines_of(s)["cogs"])
     lines.append(("Expenses", None))
     lines.append(("   Payroll Expenses", None))
     for d, number in (
@@ -242,7 +243,7 @@ def quickbooks_export(act: dict[str, DriverSet]) -> None:
             f"      {number} Salaries & Wages - {d}",
             lambda s, d=d: s.headcount[d] * s.cost_per_head[d],
         )
-    row("   Total Payroll Expenses", lambda s: pnl(s)["payroll"])
+    row("   Total Payroll Expenses", lambda s: lines_of(s)["payroll"])
     for key, label in (
         ("software", "6200 Software Subscriptions"),
         ("marketing", "6300 Advertising & Marketing"),
@@ -256,16 +257,16 @@ def quickbooks_export(act: dict[str, DriverSet]) -> None:
     row(
         "Total Expenses",
         lambda s: (
-            pnl(s)["payroll"]
+            lines_of(s)["payroll"]
             + sum(v for k, v in s.fixed.items() if k not in ("interest_expense", "income_tax"))
         ),
     )
     row(
         "Net Operating Income",
         lambda s: (
-            pnl(s)["revenue"]
-            - pnl(s)["cogs"]
-            - pnl(s)["payroll"]
+            lines_of(s)["revenue"]
+            - lines_of(s)["cogs"]
+            - lines_of(s)["payroll"]
             - sum(v for k, v in s.fixed.items() if k not in ("interest_expense", "income_tax"))
         ),
     )
@@ -275,7 +276,12 @@ def quickbooks_export(act: dict[str, DriverSet]) -> None:
     row("Total Other Expenses", lambda s: s.fixed["interest_expense"] + s.fixed["income_tax"])
     row(
         "Net Income",
-        lambda s: pnl(s)["revenue"] - pnl(s)["cogs"] - pnl(s)["payroll"] - sum(s.fixed.values()),
+        lambda s: (
+            lines_of(s)["revenue"]
+            - lines_of(s)["cogs"]
+            - lines_of(s)["payroll"]
+            - sum(s.fixed.values())
+        ),
     )
 
     def fmt(x: Fraction) -> str:
@@ -326,15 +332,12 @@ def budget_workbook(plan: dict[str, DriverSet]) -> None:
         c.font = Font(bold=True, color="FFFFFF")
         c.fill = PatternFill("solid", fgColor="217346")
 
-    def pnl(s: DriverSet) -> dict[str, Fraction]:
-        return DriverModel.pnl(DriverModel.inputs(s))
-
-    def add(label: str, fn) -> None:  # type: ignore[no-untyped-def]
+    def add(label: str, fn: Callable[[DriverSet], Fraction]) -> None:
         vals = [float(dec(fn(plan[m]))) for m in MONTHS]
         ws.append([label, *vals, sum(vals)])
 
-    add("Revenue - Subscriptions", lambda s: pnl(s)["revenue"])
-    add("Cost of Revenue - Hosting & Support", lambda s: pnl(s)["cogs"])
+    add("Revenue - Subscriptions", lambda s: pnl(to_inputs(s))["revenue"])
+    add("Cost of Revenue - Hosting & Support", lambda s: pnl(to_inputs(s))["cogs"])
     for d in DEPARTMENTS:
         add(f"Salaries - {d}", lambda s, d=d: s.headcount[d] * s.cost_per_head[d])
     for key, label in (

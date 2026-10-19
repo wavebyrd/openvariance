@@ -1,8 +1,8 @@
 """Operating driver model: the "why" behind a private company's P&L.
 
 A :class:`DriverSet` describes one period in operational terms (units sold,
-prices, headcount, pay rates, fixed spend). :class:`DriverModel` turns drivers
-into P&L lines, and :func:`explain` attributes the change in any P&L metric
+prices, headcount, pay rates, fixed spend). :func:`pnl` turns drivers into
+P&L lines, and :func:`explain` attributes the change in any P&L metric
 between two driver sets to its causes with a reconciling Shapley bridge.
 
 Revenue is decomposed the standard FP&A way:
@@ -18,9 +18,8 @@ from __future__ import annotations
 
 import csv
 from collections import defaultdict
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from decimal import Decimal
 from fractions import Fraction
 from pathlib import Path
 from typing import Any
@@ -104,59 +103,54 @@ def aggregate(sets: Sequence[DriverSet]) -> DriverSet:
     )
 
 
-class DriverModel:
-    """Maps drivers to P&L lines. Every line is exact (rational) arithmetic."""
+def to_inputs(drivers: DriverSet) -> dict[str, Any]:
+    """Flatten a driver set into Shapley inputs (volume and mix separated)."""
+    total = drivers.total_units
+    mix = {
+        p: (drivers.units.get(p, Fraction(0)) / total if total else Fraction(0))
+        for p in drivers.products
+    }
+    out: dict[str, Any] = {
+        "volume": total,
+        "mix": mix,
+        "price": dict(drivers.price),
+        "unit_cost": dict(drivers.unit_cost),
+        "headcount": dict(drivers.headcount),
+        "cost_per_head": dict(drivers.cost_per_head),
+    }
+    for key, amount in drivers.fixed.items():
+        out[f"fixed:{key}"] = amount
+    return out
 
-    @staticmethod
-    def inputs(drivers: DriverSet) -> dict[str, Any]:
-        """Flatten a driver set into Shapley inputs (volume and mix separated)."""
-        total = drivers.total_units
-        mix = {
-            p: (drivers.units.get(p, Fraction(0)) / total if total else Fraction(0))
-            for p in drivers.products
-        }
-        out: dict[str, Any] = {
-            "volume": total,
-            "mix": mix,
-            "price": dict(drivers.price),
-            "unit_cost": dict(drivers.unit_cost),
-            "headcount": dict(drivers.headcount),
-            "cost_per_head": dict(drivers.cost_per_head),
-        }
-        for key, amount in drivers.fixed.items():
-            out[f"fixed:{key}"] = amount
-        return out
 
-    @staticmethod
-    def pnl(inputs: Mapping[str, Any]) -> dict[str, Fraction]:
-        volume: Fraction = inputs["volume"]
-        mix: Mapping[str, Fraction] = inputs["mix"]
-        price: Mapping[str, Fraction] = inputs["price"]
-        unit_cost: Mapping[str, Fraction] = inputs["unit_cost"]
-        heads: Mapping[str, Fraction] = inputs["headcount"]
-        rate: Mapping[str, Fraction] = inputs["cost_per_head"]
-        lines: dict[str, Fraction] = defaultdict(Fraction)
-        for p, share in mix.items():
-            units = volume * share
-            lines["revenue"] += units * price.get(p, Fraction(0))
-            lines["cogs"] += units * unit_cost.get(p, Fraction(0))
-        for d, h in heads.items():
-            lines["payroll"] += h * rate.get(d, Fraction(0))
-        for key, amount in inputs.items():
-            if key.startswith("fixed:"):
-                lines[key.removeprefix("fixed:")] += amount
-        return dict(lines)
+def pnl(inputs: Mapping[str, Any]) -> dict[str, Fraction]:
+    """P&L leaf lines implied by Shapley inputs, in exact rational arithmetic."""
+    volume: Fraction = inputs["volume"]
+    mix: Mapping[str, Fraction] = inputs["mix"]
+    price: Mapping[str, Fraction] = inputs["price"]
+    unit_cost: Mapping[str, Fraction] = inputs["unit_cost"]
+    heads: Mapping[str, Fraction] = inputs["headcount"]
+    rate: Mapping[str, Fraction] = inputs["cost_per_head"]
+    lines: dict[str, Fraction] = defaultdict(Fraction)
+    for p, share in mix.items():
+        units = volume * share
+        lines["revenue"] += units * price.get(p, Fraction(0))
+        lines["cogs"] += units * unit_cost.get(p, Fraction(0))
+    for d, h in heads.items():
+        lines["payroll"] += h * rate.get(d, Fraction(0))
+    for key, amount in inputs.items():
+        if key.startswith("fixed:"):
+            lines[key.removeprefix("fixed:")] += amount
+    return dict(lines)
 
-    @classmethod
-    def metric(cls, key: str) -> Any:
-        """A function of inputs returning the exact value of any P&L line, computed or not."""
-        spec = line(key)
 
-        def value(inputs: Mapping[str, Any]) -> Fraction:
-            return _evaluate(key, cls.pnl(inputs))
+def line_metric(key: str) -> Callable[[Mapping[str, Any]], Fraction]:
+    """A function of inputs returning the exact value of any P&L line, computed or not."""
 
-        value.__name__ = f"metric_{spec.key}"
-        return value
+    def value(inputs: Mapping[str, Any]) -> Fraction:
+        return _evaluate(key, pnl(inputs))
+
+    return value
 
 
 def _evaluate(key: str, leaves: Mapping[str, Fraction]) -> Fraction:
@@ -213,8 +207,8 @@ def explain(
     end_label: str = "Actual",
 ) -> Bridge:
     """Reconciling bridge from baseline to actual for one P&L metric, by driver."""
-    base_in = DriverModel.inputs(baseline)
-    act_in = DriverModel.inputs(actual)
+    base_in = to_inputs(baseline)
+    act_in = to_inputs(actual)
     for key in ("mix", "price", "unit_cost", "headcount", "cost_per_head"):
         _align(base_in[key], act_in[key])
     for key in set(base_in) | set(act_in):
@@ -222,7 +216,7 @@ def explain(
             base_in.setdefault(key, Fraction(0))
             act_in.setdefault(key, Fraction(0))
     return build_bridge(
-        DriverModel.metric(metric),
+        line_metric(metric),
         base_in,
         act_in,
         default_groups(baseline, actual),
@@ -287,9 +281,6 @@ def _details(baseline: DriverSet, actual: DriverSet) -> dict[str, str]:
     return out
 
 
-# Files ---------------------------------------------------------------------
-
-
 def load_drivers(path: str | Path) -> dict[str, DriverSet]:
     """Read driver data in long format: ``period,driver,key,value``.
 
@@ -347,7 +338,7 @@ def to_financial_data(
     """The P&L implied by drivers, with payroll broken out by department."""
     entries: list[Entry] = []
     for period, s in sorted(sets.items()):
-        lines = DriverModel.pnl(DriverModel.inputs(s))
+        lines = pnl(to_inputs(s))
         for key in ("revenue", "cogs"):
             if key in lines:
                 entries.append(Entry(period, key, to_decimal(lines[key])))
@@ -364,7 +355,3 @@ def select(sets: Mapping[str, DriverSet], periods: Iterable[str]) -> DriverSet:
     if not chosen:
         raise ValueError("No driver data for the chosen periods")
     return aggregate(chosen)
-
-
-def to_decimal_map(values: Mapping[str, Fraction]) -> dict[str, Decimal]:
-    return {k: to_decimal(v) for k, v in values.items()}

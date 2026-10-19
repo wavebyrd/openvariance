@@ -12,7 +12,7 @@ Per-period mechanics (documented in docs/methodology.md):
     cost of sales = revenue x (1 - gross margin)
     operating exp = revenue x opex % + fixed opex
     D&A          = opening PP&E x depreciation rate
-    interest     = opening debt x annual rate x period length
+    interest     = (opening debt + opening revolver) x annual rate x period length
     tax          = max(pretax income, 0) x tax rate
     receivables  = revenue x DSO / days in period
     inventory    = cost of sales x DIO / days in period
@@ -25,11 +25,11 @@ Per-period mechanics (documented in docs/methodology.md):
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import asdict, dataclass, field, fields, replace
+from dataclasses import asdict, dataclass, field, replace
 from decimal import Decimal
 from typing import Any
 
-from .accounts import BALANCE_LAYOUT, LINES, Kind, Statement
+from .accounts import BALANCE_LAYOUT, LINES
 from .checks import Check, balance_check, cash_check
 from .dataset import Entry, FinancialData
 from .money import ZERO, to_decimal
@@ -312,9 +312,6 @@ def forecast_periods(last_actual: str, count: int) -> list[str]:
     return out
 
 
-# Assumptions from history -----------------------------------------------------
-
-
 @dataclass(frozen=True)
 class InferredAssumptions:
     assumptions: Assumptions
@@ -349,7 +346,7 @@ def infer_assumptions(history: FinancialData, lookback: int = 4) -> InferredAssu
         end = history.value("revenue", window[-1]) or ZERO
         steps = len(window) - 1
         if first > 0 and end > 0:
-            vals["revenue_growth"] = D(float(end / first) ** (1 / steps) - 1)
+            vals["revenue_growth"] = (end / first) ** (D(1) / steps) - 1
             sources["revenue_growth"] = f"compound growth over the {span}"
     if "revenue_growth" not in vals:
         vals["revenue_growth"] = D("0.02")
@@ -465,28 +462,3 @@ def run_scenarios(
         project(opening, s.assumptions, labels, opening_period=last, scenario=s.name)
         for s in scenarios
     ]
-
-
-def assumption_fields() -> list[str]:
-    return [f.name for f in fields(Assumptions)]
-
-
-def statement_lines(statement: Statement) -> list[str]:
-    return [k for k, spec in LINES.items() if spec.statement is statement]
-
-
-__all__ = [
-    "ASSUMPTION_LABELS",
-    "Assumptions",
-    "ForecastResult",
-    "InferredAssumptions",
-    "Kind",
-    "Scenario",
-    "default_scenarios",
-    "forecast_periods",
-    "infer_assumptions",
-    "next_period",
-    "opening_balances",
-    "project",
-    "run_scenarios",
-]

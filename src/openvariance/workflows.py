@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from . import commentary, dashboard, excel
+from .accounts import leaf_components
 from .attribution import Bridge, line_bridge
 from .dataset import FinancialData, periods_through
 from .drivers import DriverSet, explain, load_drivers, select
@@ -100,13 +101,13 @@ def run_variance(
             end_label=actual_label,
         )
     elif headline.actual is not None and headline.baseline is not None:
-        leaves = [
-            r
-            for r in report.rows
-            if not r.is_total and r.impact is not None and _feeds(r.line, headline.line)
-        ]
+        feeders = leaf_components(headline.line)
         bridge = line_bridge(
-            [(r.label, r.impact) for r in leaves if r.impact is not None],
+            [
+                (r.label, r.impact)
+                for r in report.rows
+                if not r.is_total and r.impact is not None and r.line in feeders
+            ],
             metric_label=headline.label,
             start=headline.baseline.quantize(Decimal("0.01")),
             end=headline.actual.quantize(Decimal("0.01")),
@@ -114,12 +115,6 @@ def run_variance(
             end_label=actual_label,
         )
     return VarianceRun(report, bridge, commentary.summarize(report, bridge), company or actual.name)
-
-
-def _feeds(leaf: str, total: str) -> bool:
-    from .accounts import leaf_components
-
-    return leaf in leaf_components(total)
 
 
 def export_variance_outputs(

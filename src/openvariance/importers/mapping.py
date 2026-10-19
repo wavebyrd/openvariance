@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 import re
 from collections import defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from decimal import Decimal
 from pathlib import Path
@@ -365,12 +365,3 @@ def _tie_out(inspection: Inspection, data: FinancialData, flip: Mapping[str, int
                 detail += "; the file shows it with the opposite sign"
             checks.append(tie_check(f"Ties to source: {row.label}", period, expected, ours, detail))
     return checks
-
-
-def mapping_from_suggestions(
-    suggestions: Sequence[Suggestion], min_confidence: str = "low"
-) -> AccountMapping:
-    rank = {"high": 3, "medium": 2, "low": 1}
-    return AccountMapping(
-        {s.source: s.target for s in suggestions if rank[s.confidence] >= rank[min_confidence]}
-    )
