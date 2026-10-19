@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "openvariance"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Open source FP&A variance analysis: explain why your numbers moved, with reconciled driver bridges, three-statement forecasts, and Excel output."
 readme = "README.md"
 license = "MIT"
@@ -49,6 +49,9 @@ openvariance = "openvariance.cli:main"
 [project.urls]
 Homepage = "https://github.com/wavebyrd/openvariance"
 Issues = "https://github.com/wavebyrd/openvariance/issues"
+
+[tool.hatch.version]
+path = "src/openvariance/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/openvariance"]
