@@ -57,8 +57,6 @@ class FinancialData:
         ]
         return cls(name, entries, dict(meta or {}))
 
-    # Reading ---------------------------------------------------------------
-
     @property
     def periods(self) -> list[str]:
         return sorted({e.period for e in self.entries})
@@ -123,16 +121,12 @@ class FinancialData:
     def __len__(self) -> int:
         return len(self.entries)
 
-    # Transforming ----------------------------------------------------------
-
     def filter(self, periods: Sequence[str]) -> FinancialData:
         keep = set(periods)
         return FinancialData(self.name, [e for e in self.entries if e.period in keep], self.meta)
 
     def merged(self, other: FinancialData, name: str | None = None) -> FinancialData:
         return FinancialData(name or self.name, [*self.entries, *other.entries], self.meta)
-
-    # Files -----------------------------------------------------------------
 
     def to_csv(self, path: str | Path) -> None:
         """Write the standard long format: period, line, amount, department."""

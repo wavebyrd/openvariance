@@ -7,8 +7,9 @@ from typing import Any
 import pytest
 from openpyxl import load_workbook
 
-from openvariance import compare, excel, explain
+from openvariance import compare, demo, excel, explain
 from openvariance.forecast import default_scenarios, infer_assumptions, run_scenarios
+from openvariance.sec import load_company
 
 formulas = pytest.importorskip("formulas")
 
@@ -28,7 +29,7 @@ def recalc(path: Path) -> dict[str, Any]:
     return out
 
 
-def test_forecast_workbook_recalculates_to_the_engine(tmp_path: Path, demo_data) -> None:  # type: ignore[no-untyped-def]
+def test_forecast_workbook_recalculates_to_the_engine(tmp_path: Path, demo_data: demo.Demo) -> None:
     base = infer_assumptions(demo_data.history).assumptions
     results = run_scenarios(demo_data.history, default_scenarios(base, 12), 6)
     path = excel.export_forecast(results, tmp_path / "f.xlsx", company="Demo Co.")
@@ -50,7 +51,7 @@ def test_forecast_workbook_recalculates_to_the_engine(tmp_path: Path, demo_data)
         assert values[f"MODEL!{col}{rows['Balance sheet balances (net of opening gap)']}"] == 0
 
 
-def test_variance_workbook_formulas_match_the_report(tmp_path: Path, demo_data) -> None:  # type: ignore[no-untyped-def]
+def test_variance_workbook_formulas_match_the_report(tmp_path: Path, demo_data: demo.Demo) -> None:
     rep = compare(demo_data.actual, demo_data.budget, ["2026-09"])
     bridge = explain(demo_data.budget_drivers["2026-09"], demo_data.actual_drivers["2026-09"])
     path = excel.export_variance(rep, tmp_path / "v.xlsx", bridge=bridge, company="Demo Co.")
@@ -68,8 +69,6 @@ def test_variance_workbook_formulas_match_the_report(tmp_path: Path, demo_data) 
 
 
 def test_revolver_formulas_match_the_engine(tmp_path: Path, crwv_facts: Path) -> None:
-    from openvariance.sec import load_company
-
     history = load_company("CRWV", facts_path=crwv_facts).data
     base = infer_assumptions(history).assumptions
     results = run_scenarios(history, default_scenarios(base, 4), 4)

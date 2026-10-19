@@ -6,6 +6,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
+from openvariance import FinancialData, demo
 from openvariance.forecast import (
     Assumptions,
     default_scenarios,
@@ -111,14 +112,14 @@ def test_an_unbalanced_opening_is_reported_not_plugged() -> None:
     assert all(c.passed for c in res.checks[1:])  # the forecast adds no new gap
 
 
-def test_infer_assumptions_explains_sources(demo_data) -> None:  # type: ignore[no-untyped-def]
+def test_infer_assumptions_explains_sources(demo_data: demo.Demo) -> None:
     inferred = infer_assumptions(demo_data.history)
     assert set(inferred.sources) == set(Assumptions.__dataclass_fields__)
     assert Decimal("0.75") < inferred.assumptions.gross_margin < Decimal("0.85")
     assert inferred.assumptions.dso == Decimal("36.0")
 
 
-def test_scenarios_bracket_the_base(demo_data) -> None:  # type: ignore[no-untyped-def]
+def test_scenarios_bracket_the_base(demo_data: demo.Demo) -> None:
     base = infer_assumptions(demo_data.history).assumptions
     results = run_scenarios(demo_data.history, default_scenarios(base, 12), 12)
     ebitda = {r.scenario: sum(r.values[p]["ebitda"] for p in r.periods) for r in results}
@@ -127,8 +128,6 @@ def test_scenarios_bracket_the_base(demo_data) -> None:  # type: ignore[no-untyp
 
 
 def test_history_must_have_revenue() -> None:
-    from openvariance import FinancialData
-
     with pytest.raises(ValueError):
         infer_assumptions(FinancialData.from_records("x", [("2026-01", "cash", 1)]))
 

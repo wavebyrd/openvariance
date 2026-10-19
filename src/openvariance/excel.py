@@ -26,6 +26,7 @@ from typing import Any
 from openpyxl import Workbook
 from openpyxl.chart import BarChart, Reference
 from openpyxl.chart.shapes import GraphicalProperties
+from openpyxl.drawing.colors import ColorChoice
 from openpyxl.drawing.fill import PatternFillProperties
 from openpyxl.formatting.rule import CellIsRule, FormulaRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -116,9 +117,6 @@ def _footer(ws: Worksheet, row: int) -> None:
         f"{today:%B} {today.day}, {today.year}. "
         "Blue = input, black = formula.",
     ).font = MUTED
-
-
-# Variance workbook ----------------------------------------------------------------
 
 
 def export_variance(
@@ -450,20 +448,14 @@ def _waterfall_chart(bridge_rows: dict[str, Any], title: str) -> BarChart:
             gp.line.noFill = True
         elif color == theme.UNFAVORABLE_BAR:
             gp.pattFill = PatternFillProperties(prst="wdUpDiag")
-            gp.pattFill.foreground = _color(color)
-            gp.pattFill.background = _color("#F4B6B4")
+            gp.pattFill.foreground = ColorChoice(srgbClr=color.lstrip("#"))
+            gp.pattFill.background = ColorChoice(srgbClr="F4B6B4")
             gp.line.noFill = True
         else:
             gp.solidFill = color.lstrip("#")
             gp.line.noFill = True
         series.graphicalProperties = gp
     return chart
-
-
-def _color(hex_color: str) -> Any:
-    from openpyxl.drawing.colors import ColorChoice
-
-    return ColorChoice(srgbClr=hex_color.lstrip("#"))
 
 
 def _dashboard_sheet(
@@ -579,8 +571,6 @@ def _notes_sheet(ws: Worksheet, report: VarianceReport, bridge: Bridge | None) -
         ws.row_dimensions[i].height = 32
     _footer(ws, len(notes) + 6)
 
-
-# Forecast workbook -------------------------------------------------------------------
 
 _MODEL_ROWS = (
     ("h", "Income statement"),

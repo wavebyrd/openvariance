@@ -28,6 +28,8 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
+from openpyxl import load_workbook
+
 from ..money import ZERO
 
 Cell = Any
@@ -146,9 +148,6 @@ class Inspection:
         }
 
 
-# Cell parsing -------------------------------------------------------------
-
-
 def parse_amount(cell: Cell) -> Decimal | None:
     """Parse an accounting-formatted amount. Returns None for blanks and dashes."""
     if cell is None or isinstance(cell, bool):
@@ -224,9 +223,6 @@ def _text(cell: Cell) -> str:
     return str(cell).strip()
 
 
-# Reading files -------------------------------------------------------------
-
-
 def read_grid(path: str | Path, sheet: str | None = None) -> tuple[list[list[Cell]], str | None]:
     """Load a CSV or Excel sheet as a list of rows. Picks the busiest sheet if none is named."""
     path = Path(path)
@@ -239,8 +235,6 @@ def read_grid(path: str | Path, sheet: str | None = None) -> tuple[list[list[Cel
             dialect = csv.excel_tab if suffix == ".tsv" else csv.excel
         return [list(r) for r in csv.reader(raw.splitlines(), dialect)], None
     if suffix in (".xlsx", ".xlsm"):
-        from openpyxl import load_workbook
-
         wb = load_workbook(path, read_only=True, data_only=True)
         try:
             names = [sheet] if sheet else wb.sheetnames
@@ -260,8 +254,6 @@ def read_grid(path: str | Path, sheet: str | None = None) -> tuple[list[list[Cel
         raise ValueError("Old .xls files aren't supported. Save the file as .xlsx or .csv first.")
     raise ValueError(f"Unsupported file type {suffix!r}. Use .csv or .xlsx.")
 
-
-# Inspection ------------------------------------------------------------------
 
 LONG_COLUMNS = {
     "account": re.compile(r"^(account( name)?|gl account|description|line( item)?|name|category)$"),
@@ -382,11 +374,10 @@ def _inspect_wide(
         for c, cell in enumerate(grid[header_row])
         if c > first_value_col and c not in cols and re.match(r"\s*total", _text(cell), re.I)
     ]
-    by_department = period is not None
     insp = Inspection(
         path,
         sheet,
-        "by_department" if by_department else "wide",
+        "by_department" if period else "wide",
         header_row + 1,
         list(dict.fromkeys(cols.values())),
         units,
@@ -420,7 +411,7 @@ def _inspect_wide(
         number, name = _split_account(label)
         section = " / ".join(s for s, _ in stack)
         if TOTAL_WORDS.match(name):
-            source = _SourceBlock.for_total(name, stack, details)
+            source = _rows_totalled(name, stack, details)
             src_row = SourceRow(n, label, number, name, values, "total", section)
             if source is not None:
                 block_sum = _sum_values(source)
@@ -452,42 +443,40 @@ def _inspect_wide(
                 "treated as a subtotal. Map it explicitly if that's wrong."
             )
             continue
-        if by_department:
+        if period is not None:
             for d, amount in values.items():
                 details.append(
-                    SourceRow(n, label, number, name, {period: amount}, "detail", section, d)  # type: ignore[dict-item]
+                    SourceRow(n, label, number, name, {period: amount}, "detail", section, d)
                 )
                 insp.rows.append(details[-1])
             continue
         detail = SourceRow(n, label, number, name, values, "detail", section)
         details.append(detail)
         insp.rows.append(detail)
-    if by_department:
-        insp.columns = [period]  # type: ignore[list-item]
+    if period is not None:
+        insp.columns = [period]
     _finish_hints(insp)
     return insp
 
 
-class _SourceBlock:
-    @staticmethod
-    def for_total(
-        name: str, stack: list[tuple[str, int]], details: list[SourceRow]
-    ) -> list[SourceRow] | None:
-        """Rows a 'Total X' row should equal, popping the matching section off the stack."""
-        m = re.match(r"total\s+(.+)", name, re.IGNORECASE)
-        if not m:
-            return None  # gross profit, net income: cross-section totals, checked after mapping
-        target = m[1].strip().lower()
-        for i in range(len(stack) - 1, -1, -1):
-            if stack[i][0].lower().strip(" :") == target:
-                start = stack[i][1]
-                del stack[i:]
-                return details[start:]
-        if stack:
-            start = stack[-1][1]
-            stack.pop()
+def _rows_totalled(
+    name: str, stack: list[tuple[str, int]], details: list[SourceRow]
+) -> list[SourceRow] | None:
+    """Rows a 'Total X' row should equal, popping the matching section off the stack."""
+    m = re.match(r"total\s+(.+)", name, re.IGNORECASE)
+    if not m:
+        return None  # gross profit, net income: cross-section totals, checked after mapping
+    target = m[1].strip().lower()
+    for i in range(len(stack) - 1, -1, -1):
+        if stack[i][0].lower().strip(" :") == target:
+            start = stack[i][1]
+            del stack[i:]
             return details[start:]
-        return details
+    if stack:
+        start = stack[-1][1]
+        stack.pop()
+        return details[start:]
+    return details
 
 
 def _sum_values(rows: Sequence[SourceRow]) -> dict[str, Decimal]:

@@ -18,7 +18,10 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from . import __version__, demo, workflows
+from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
+
+from . import __version__, demo, excel, workflows
 from .accounts import BALANCE_LAYOUT, LINES
 from .checks import Check, balance_check
 from .dataset import FinancialData
@@ -26,6 +29,7 @@ from .drivers import DriverSet, load_drivers
 from .importers import AccountMapping, suggest_mapping
 from .importers import import_file as import_data
 from .importers import inspect_file as _inspect
+from .sec import load_company
 from .variance import Thresholds
 
 INSTRUCTIONS = """\
@@ -74,18 +78,8 @@ class Workspace:
         }
 
 
-def build_server() -> Any:
-    try:
-        from mcp.server.mcpserver import MCPServer as Server  # mcp >= 2
-    except ImportError:  # pragma: no cover - mcp 1.x
-        from mcp.server.fastmcp import FastMCP as Server  # type: ignore[no-redef,attr-defined]
-
-    try:
-        from mcp.server.mcpserver.exceptions import ToolError
-    except ImportError:  # pragma: no cover - mcp 1.x
-        from mcp.server.fastmcp.exceptions import ToolError  # type: ignore[no-redef]
-
-    server = Server("openvariance", instructions=INSTRUCTIONS)
+def build_server() -> MCPServer:
+    server = MCPServer("openvariance", instructions=INSTRUCTIONS)
     ws = Workspace()
 
     def tool(fn: Callable[..., Any]) -> Callable[..., Any]:
@@ -193,8 +187,6 @@ def build_server() -> Any:
         """Load a US public company's quarterly statements from SEC EDGAR (free, no key) as a
         dataset (default name: the ticker). SEC requires a name and email as user agent:
         pass `user_agent` or set OPENVARIANCE_SEC_USER_AGENT."""
-        from .sec import load_company
-
         company = load_company(ticker, quarters=quarters, user_agent=user_agent)
         key = name or ticker.upper()
         ws.data[key] = company.data
@@ -278,8 +270,6 @@ def build_server() -> Any:
     def export_excel(path: str, kind: str = "variance") -> dict[str, str]:
         """Save the last variance ('variance') or forecast ('forecast') as an Excel workbook with
         live formulas. Returns the absolute path."""
-        from . import excel
-
         target = _path(path)
         if kind == "forecast":
             if not ws.last_forecast:

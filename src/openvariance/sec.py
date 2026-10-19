@@ -142,9 +142,6 @@ class Fact:
     accession: str
 
 
-# Fetching --------------------------------------------------------------------
-
-
 def _cache_dir() -> Path:
     root = os.environ.get("OPENVARIANCE_CACHE") or (Path.home() / ".cache" / "openvariance")
     path = Path(root) / "sec"
@@ -212,9 +209,6 @@ def fetch_company_facts(
     )
 
 
-# Normalizing -------------------------------------------------------------------
-
-
 def _facts(company: Mapping[str, Any], tag: str) -> list[Fact]:
     node = company.get("facts", {}).get("us-gaap", {}).get(tag)
     if not node:
@@ -256,7 +250,7 @@ def _is_quarter(days: int) -> bool:
 
 def discrete_quarters(facts: Sequence[Fact]) -> dict[dt.date, tuple[Decimal, str]]:
     """Quarter-end date -> (value, how it was obtained) for a duration tag."""
-    by_span = _latest_filed(f for f in facts if f.start is not None)  # type: ignore[arg-type]
+    by_span = _latest_filed([f for f in facts if f.start is not None])
     out: dict[dt.date, tuple[Decimal, str]] = {}
     for (start, end), f in by_span.items():
         assert start is not None

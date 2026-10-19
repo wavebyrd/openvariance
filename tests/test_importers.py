@@ -62,7 +62,7 @@ def test_parse_period(text: object, expected: str | None) -> None:
     assert parse_period(text) == expected
 
 
-def test_quickbooks_export_imports_and_ties(demo_data) -> None:  # type: ignore[no-untyped-def]
+def test_quickbooks_export_imports_and_ties(demo_data: demo.Demo) -> None:
     path = EXAMPLES / "demo_pl_quickbooks_2026.csv"
     insp = inspect_file(path)
     assert insp.layout == "wide" and insp.columns[0] == "2026-01" and insp.columns[-1] == "2026-09"
