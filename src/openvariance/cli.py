@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import sys
 import webbrowser
@@ -12,8 +13,11 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__, demo, workflows
+from .accounts import LINES
+from .excel import export_forecast
 from .format import accounting, compact, percent
 from .importers import AccountMapping, inspect_file, suggest_mapping
+from .sec import load_company
 from .variance import Status, Thresholds
 
 GREEN, RED, DIM, BOLD, RESET = "\033[32m", "\033[31m", "\033[2m", "\033[1m", "\033[0m"
@@ -93,8 +97,6 @@ def cmd_demo(args: argparse.Namespace) -> int:
         run, out / "demo_variance.xlsx", out / "demo_dashboard.html", "Demo Co. sample data"
     )
     fc = workflows.run_forecast(d.history, company=d.company)
-    from .excel import export_forecast
-
     written.append(
         export_forecast(
             fc.results, out / "demo_forecast.xlsx", company=d.company, sources=fc.inferred.sources
@@ -209,8 +211,6 @@ def cmd_variance(args: argparse.Namespace) -> int:
 
 
 def cmd_sec(args: argparse.Namespace) -> int:
-    from .sec import load_company
-
     company = load_company(
         args.ticker, quarters=args.quarters, user_agent=args.user_agent, facts_path=args.facts
     )
@@ -229,8 +229,6 @@ def cmd_sec(args: argparse.Namespace) -> int:
     print(f"{'':24}" + "".join(f"{p:>11}" for p in d.periods))
     for k in keys:
         if d.has(k):
-            from .accounts import LINES
-
             print(
                 f"{LINES[k].label:24}"
                 + "".join(
@@ -245,14 +243,10 @@ def cmd_sec(args: argparse.Namespace) -> int:
 
 
 def cmd_forecast(args: argparse.Namespace) -> int:
-    from .excel import export_forecast
-
     if args.demo:
         d = demo.load()
         history, company = d.history, d.company
     elif args.ticker:
-        from .sec import load_company
-
         sec = load_company(args.ticker, user_agent=args.user_agent, facts_path=args.facts)
         history, company = sec.data, sec.name
     elif args.history:
@@ -394,6 +388,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    # Reports use a true minus sign and em dash. Windows pipes default to cp1252, which can't
+    # encode them, so write UTF-8 whatever the console code page is.
+    for stream in (sys.stdout, sys.stderr):
+        if isinstance(stream, io.TextIOWrapper):
+            stream.reconfigure(encoding="utf-8")
     parser = build_parser()
     args = parser.parse_args(argv)
     try:

@@ -1,17 +1,22 @@
 from __future__ import annotations
 
 import asyncio
+import io
 import json
+import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
+from mcp.server.mcpserver import MCPServer
 
 from openvariance.cli import main
+from openvariance.mcp_server import build_server
 
 from .conftest import EXAMPLES
 
 
-def run(capsys: pytest.CaptureFixture[str], *args: str) -> dict:  # type: ignore[type-arg]
+def run(capsys: pytest.CaptureFixture[str], *args: str) -> dict[str, Any]:
     assert main([*args, "--json"]) == 0
     return json.loads(capsys.readouterr().out)
 
@@ -24,8 +29,19 @@ def test_demo_command_writes_everything(tmp_path: Path, capsys: pytest.CaptureFi
         "demo_dashboard.html",
         "demo_forecast.xlsx",
     }
-    html = (tmp_path / "demo_dashboard.html").read_text()
+    html = (tmp_path / "demo_dashboard.html").read_text(encoding="utf-8")
     assert "<script" not in html and "Operating income bridge" in html
+
+
+def test_report_prints_when_stdout_is_not_utf8(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Windows pipes default to cp1252, which has no minus sign or em dash.
+    out = io.TextIOWrapper(io.BytesIO(), encoding="cp1252")
+    monkeypatch.setattr(sys, "stdout", out)
+    assert main(["demo", "--out", str(tmp_path)]) == 0
+    out.flush()
+    assert "reconciles exactly" in out.buffer.getvalue().decode("utf-8")
 
 
 def test_variance_from_files(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -85,15 +101,13 @@ def test_sec_command_offline(
     assert out["company"] == "CoreWeave, Inc." and len(out["periods"]) == 4
 
 
-def call(server, tool: str, **arguments):  # type: ignore[no-untyped-def]
+def call(server: MCPServer, tool: str, **arguments: Any) -> Any:
     result = asyncio.run(server.call_tool(tool, arguments))
     blocks = result[0] if isinstance(result, tuple) else getattr(result, "content", result)
     return json.loads(blocks[0].text)
 
 
 def test_mcp_tools_end_to_end(tmp_path: Path) -> None:
-    from openvariance.mcp_server import build_server
-
     server = build_server()
     names = {t.name for t in asyncio.run(server.list_tools())}
     assert {
@@ -124,8 +138,6 @@ def test_mcp_tools_end_to_end(tmp_path: Path) -> None:
 
 
 def test_mcp_errors_reach_the_agent_in_plain_english() -> None:
-    from openvariance.mcp_server import build_server
-
     server = build_server()
     call(server, "load_demo")
     with pytest.raises(Exception, match="Loaded datasets: actual, budget, history"):

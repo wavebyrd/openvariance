@@ -11,6 +11,9 @@ uv venv && uv pip install -e '.[dev]'
 .venv/bin/pytest
 ```
 
+On Windows the tools live in `.venv\Scripts\` instead of `.venv/bin/`. CI runs on both Linux and
+Windows, so open files with an explicit `encoding="utf-8"`.
+
 Before opening a pull request, run:
 
 ```bash
